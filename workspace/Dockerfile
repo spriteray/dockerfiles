@@ -1,40 +1,40 @@
-# 拉取最新的ubuntu
-FROM ubuntu:latest
-
-# 打开完整版
-RUN bash -c 'yes | unminimize'
-# 打开时区设置
-ENV TZ=Asia/Shanghai
-RUN mkdir -p /usr/src
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo '$TZ' > /etc/timezone
+# 拉取最新的centos
+FROM centos:latest
 
 # 维护者
 MAINTAINER spriteray spriteray@gmail.com
 
-# 更新apt
-RUN apt update
+# 打开时区设置和编码
+RUN update-locale
+RUN timedatectl set-timezone Asia/Shanghai
+RUN localectl set-locale LANG=en_US.UTF-8
+
 # 安装系统环境
-RUN apt install -y systemd systemd-sysv net-tools sudo curl wget
-RUN apt install -y build-essential openssh-server openssh-client cmake 
-RUN apt install -y zsh git gdb tmux vim bash-completion language-pack-en
-# 安装开发环境
-RUN apt install -y libssl-dev libpython3-dev python3-dev man
-# 安装帮助手册
-RUN apt install -y manpages-de  manpages-de-dev  manpages-dev glibc-doc manpages-posix-dev manpages-posix manpages-zh
+RUN dnf remove -y vi
+RUN dnf install -y systemd net-tools curl wget ncurses openssh-server openssh-clients openssl openssl-devel
+RUN dnf group install -y "Development Tools"
+RUN dnf install -y ncurses-devel ruby ruby-devel liblua-devel python3 python3-devel perl-devel tcl-devel libpython2-devel libpython3-devel
+# 安装vim8.2
+RUN git clone https://github.com/vim/vim.git /usr/src/vim \
+		& cd /usr/src/vim/ & ./configure --with-features=huge --enable-multibyte --enable-luainterp --enable-python3interp --enable-cscope & make & make install
+RUN dnf install -y sudo man-pages man-db zsh tmux bash-completion tzdata
+# 安装cmake
+RUN git clone https://github.com/Kitware/CMake.git /usr/src/cmake \
+		& cd /usr/src/cmake & ./bootstrap & make & make install
 
 # 映射宿主机的文件系统
 VOLUME /data
 
 # 启动sshd
 RUN service ssh start
-ENTRYPOINT /sbin/init
+ENTRYPOINT /usr/sbin/init
 
 # 指定对外服务的端口号
 EXPOSE 22 8001 8011 10712
 
 # go
 RUN wget https://golang.org/dl/go1.16.3.linux-amd64.tar.gz
-RUN rm -rf /usr/local/go && tar -C /usr/local -xzf go1.16.3.linux-amd64.tar.gz
+RUN rm -rf /usr/local/go && tar -C /usr/local -xzf go1.16.3.linux-amd64.tar.gz && rm -rf go1.16.3.linux-amd64.tar.gz
 ENV PATH=$PATH:/usr/local/go/bin
 
 # YCM
@@ -43,14 +43,9 @@ RUN git clone https://github.com/ycm-core/YouCompleteMe.git /usr/src/YouComplete
 		&& git submodule update --init --recursive \
 		&& ./install.py  --clangd-completer --go-completer
 
-# 编码
-RUN update-locale
-RUN systemctl mask systemd-resolved.service
-RUN localectl set-locale LANG=zh_CN.UTF-8
-
 # 增加用户
 RUN groupadd -r develop
-RUN useradd -s /bin/zsh -m -N -G develop,sudo ryan.zhang
+RUN useradd -s /bin/zsh -m -N -G develop,wheel ryan.zhang
 RUN echo "ryan.zhang:0G0YtvJR" | chpasswd
 
 # 切换用户
