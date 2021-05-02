@@ -1,0 +1,116 @@
+# 拉取最新的ubuntu
+FROM ubuntu:latest
+
+# 打开完整版
+RUN bash -c 'yes | unminimize'
+# 打开时区设置
+ENV TZ=Asia/Shanghai
+RUN mkdir -p /usr/src
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo '$TZ' > /etc/timezone
+
+# 维护者
+MAINTAINER spriteray spriteray@gmail.com
+
+# 更新apt
+RUN apt update
+# 安装系统环境
+RUN apt install -y systemd systemd-sysv net-tools sudo curl wget
+RUN apt install -y build-essential openssh-server openssh-client cmake 
+RUN apt install -y zsh git gdb tmux vim bash-completion language-pack-en
+# 安装开发环境
+RUN apt install -y libssl-dev libpython3-dev python3-dev man
+# 安装帮助手册
+RUN apt install -y manpages-de  manpages-de-dev  manpages-dev glibc-doc manpages-posix-dev manpages-posix manpages-zh
+
+# 映射宿主机的文件系统
+VOLUME /data
+
+# 启动sshd
+RUN service ssh start
+ENTRYPOINT /sbin/init
+
+# 指定对外服务的端口号
+EXPOSE 22 8001 8011 10712
+
+# go
+RUN wget https://golang.org/dl/go1.16.3.linux-amd64.tar.gz
+RUN rm -rf /usr/local/go && tar -C /usr/local -xzf go1.16.3.linux-amd64.tar.gz
+ENV PATH=$PATH:/usr/local/go/bin
+
+# YCM
+RUN git clone https://github.com/ycm-core/YouCompleteMe.git /usr/src/YouCompleteMe \
+		&& cd /usr/src/YouCompleteMe \
+		&& git submodule update --init --recursive \
+		&& ./install.py  --clangd-completer --go-completer
+
+# 编码
+RUN update-locale
+RUN systemctl mask systemd-resolved.service
+RUN localectl set-locale LANG=zh_CN.UTF-8
+
+# 增加用户
+RUN groupadd -r develop
+RUN useradd -s /bin/zsh -m -N -G develop,sudo ryan.zhang
+RUN echo "ryan.zhang:0G0YtvJR" | chpasswd
+
+# 切换用户
+USER ryan.zhang
+WORKDIR /home/ryan.zhang
+
+# 安装oh-my-zsh
+RUN sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+# tmux配置
+RUN git clone https://github.com/gpakosz/.tmux.git \
+		&& ln -s .tmux/.tmux.conf .tmux.conf && cp .tmux/.tmux.conf.local .tmux.conf.local
+
+# 拉取dotvim
+RUN git clone https://github.com/spriteray/dotvim.git
+
+# vim的部分配置
+RUN cp dotvim/_vimrc ._vimrc
+RUN cp dotvim/.dircolors .dircolors
+RUN cp dotvim/_gitconfig .gitconfig
+RUN cp -r dotvim/vimfiles .vim
+RUN cp dotvim/agnoster-light.zsh-theme .oh-my-zsh/themes 
+RUN mkdir -p .vim/bundle
+RUN ln -s /usr/src/YouCompleteMe .vim/bundle/YouCompleteMe
+
+# zsh别名设置
+# TODO: go path目录
+RUN echo "export LANG=\"zh_CN.UTF-8\"" >> .zshrc
+RUN echo "export LC_ALL=\"zh_CN.UTF-8\"" >> .zshrc
+RUN echo "export LC_CTYPE=\"en_US.UTF-8\"" >> .zshrc
+RUN echo "eval \"\`dircolors -b .dircolors\`\"" >> .zshrc
+RUN echo "alias ls='ls -F --color'" >> .zshrc
+RUN echo "alias ll='ls -l'" >> .zshrc
+RUN echo "alias la='ls -A'" >> .zshrc
+RUN echo "alias tailf='tail -n 300 -f'" >> .zshrc
+RUN echo "alias tnew='tmux new -s'" >> .zshrc
+RUN echo "alias tattach='tmux attach -t'" >> .zshrc
+RUN sed -i "s/ZSH_THEME=\"robbyrussell\"/ZSH_THEME=\"agnoster-light\"/g" .zshrc
+
+# tmux设置
+RUN sed -i 's/^# set -gu prefix2/set -gu prefix2/g' .tmux.conf.local
+RUN sed -i 's/^# unbind C-a/unbind C-a/g' .tmux.conf.local
+RUN sed -i 's/^# unbind C-b/unbind C-x/g' .tmux.conf.local
+RUN sed -i 's/^# set -g prefix C-a/set -g prefix C-x/g' .tmux.conf.local
+RUN sed -i 's/^# bind C-a send-prefix/bind C-x send-prefix/g' .tmux.conf.local
+RUN sed -i 's/^#set -g status-position top/set -g status-position top/g' .tmux.conf.local
+
+# 后续操作
+# 安装vim插件: PlugInstall
+# 执行 localectl set-locale LANG=zh_CN.UTF-8
+
+# 指令
+# docker run -itd -v workspace:/data --privileged=true -p 22:22 --name workspace workspace /sbin/init
+# docker commit -m "develop workspace" 260d067248bf workspace:v1
+# docker tag ubuntu-workspace spriteray/workspace:v1
+# docker push spriteray/workspace:v1
+# docker buildx build --allow security.insecure --build-arg http_proxy="http://172.31.176.1:7890" --build-arg https_proxy="http://172.31.176.1:7890" -t workspace .
+# docker run -d --name 容器名称 --cap-add=SYS_ADMIN                                           \
+#        --mount type=tmpfs,target=/run,tmpfs-mode=1777,tmpfs-size=67108864                  \
+#        --mount type=tmpfs,target=/run/lock,tmpfs-mode=1777,tmpfs-size=67108864             \
+#        --mount type=tmpfs,target=/tmp,tmpfs-mode=1777                                      \
+#        --mount type=tmpfs,target=/var/log/journal,tmpfs-mode=1777                          \
+#        --mount type=bind,source=/sys/fs/cgroup,target=/sys/fs/cgroup                       \
+#        镜像HASH值或TAG名称 /sbin/init
