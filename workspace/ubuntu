@@ -67,7 +67,7 @@ RUN git clone https://github.com/gpakosz/.tmux.git \
 RUN git clone https://github.com/spriteray/dotvim.git
 
 # vim的部分配置
-RUN cp dotvim/_vimrc ._vimrc
+RUN cp dotvim/_vimrc .vimrc
 RUN cp dotvim/.dircolors .dircolors
 RUN cp dotvim/_gitconfig .gitconfig
 RUN cp -r dotvim/vimfiles .vim
@@ -77,9 +77,9 @@ RUN ln -s /usr/src/YouCompleteMe .vim/bundle/YouCompleteMe
 
 # zsh别名设置
 # TODO: go path目录
-RUN echo "export LANG=\"zh_CN.UTF-8\"" >> .zshrc
-RUN echo "export LC_ALL=\"zh_CN.UTF-8\"" >> .zshrc
-RUN echo "export LC_CTYPE=\"en_US.UTF-8\"" >> .zshrc
+RUN echo "export LESSCHARSET=utf-8" >> .zshrc
+RUN echo "export LANG=zh_CN.UTF-8" >> .zshrc
+RUN echo "export LC_ALL=zh_CN.UTF-8" >> .zshrc
 RUN echo "eval \"\`dircolors -b .dircolors\`\"" >> .zshrc
 RUN echo "alias ls='ls -F --color'" >> .zshrc
 RUN echo "alias ll='ls -l'" >> .zshrc
