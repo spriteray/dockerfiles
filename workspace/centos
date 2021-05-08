@@ -92,9 +92,8 @@ RUN sed -i 's/^# set -g prefix C-a/set -g prefix C-x/g' .tmux.conf.local
 RUN sed -i 's/^# bind C-a send-prefix/bind C-x send-prefix/g' .tmux.conf.local
 RUN sed -i 's/^#set -g status-position top/set -g status-position top/g' .tmux.conf.local
 
-# 后续操作
-# 安装vim插件: PlugInstall
-# 执行 localectl set-locale LANG=zh_CN.UTF-8
+# 安装VIM插件
+RUN vim +PlugInstall +qall
 
 # 指令
 # docker run -itd -v workspace:/data --privileged=true -p 22:22 --name workspace workspace /sbin/init
