@@ -25,6 +25,7 @@ RUN apt install -y manpages-de  manpages-de-dev  manpages-dev glibc-doc manpages
 
 # 映射宿主机的文件系统
 VOLUME /data
+RUN update-rc.d ssh defaults
 # 指定对外服务的端口号
 EXPOSE 22 8001 8011 10712
 
@@ -41,6 +42,17 @@ RUN git clone https://github.com/ycm-core/YouCompleteMe.git /usr/src/YouComplete
 
 # 安装locales
 RUN /usr/share/locales/install-language-pack zh_CN
+
+# 安装Protobuf
+ENV PROTOBUF_VERSION="3.19.4"
+RUN set -eux; \
+		tmpdir=$(mktemp -d); \
+    	curl -o ${tmpdir}.zip -L https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VERSION}/protobuf-all-${PROTOBUF_VERSION}.zip; \
+    	unzip -d ${tmpdir} ${tmpdir}.zip; \
+    	cd ${tmpdir}/protobuf-all-${PROTOBUF_VERSION}; \
+    	./configure; \
+    	make; \
+    	make install;
 
 # 增加用户
 RUN groupadd -r develop

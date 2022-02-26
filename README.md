@@ -6,7 +6,7 @@ dockerfiles
 # docker build --no-cache --build-arg http_proxy="http://172.26.208.1:7890" --build-arg https_proxy="http://172.26.208.1:7890" -t workspace -f workspace/ubuntu .
 
 # 启动新创建的镜像
-# docker run -itd -v workspace:/data --privileged=true -p 2222:22 --name workspace workspace
+# docker run -itd -v workspace:/data --privileged=true -p 2222:22 --name workspace workspace /sbin/init
 
 # 启动sshd
 # docker exec -it <CONTAINER ID> zsh
