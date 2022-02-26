@@ -5,6 +5,7 @@ FROM ubuntu:latest
 RUN bash -c 'yes | unminimize'
 # 打开时区设置
 ENV TZ=Asia/Shanghai
+ENV LANG=zh_CN.UTF-8
 RUN mkdir -p /usr/src
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo '$TZ' > /etc/timezone
 
@@ -14,7 +15,7 @@ MAINTAINER spriteray spriteray@gmail.com
 # 更新apt
 RUN apt update
 # 安装系统环境
-RUN apt install -y systemd systemd-sysv net-tools sudo curl wget
+RUN apt install -y net-tools sudo curl wget
 RUN apt install -y build-essential openssh-server openssh-client cmake 
 RUN apt install -y zsh git gdb tmux vim bash-completion language-pack-en
 # 安装开发环境
@@ -27,7 +28,6 @@ VOLUME /data
 
 # 启动sshd
 RUN service ssh start
-ENTRYPOINT /sbin/init
 
 # 指定对外服务的端口号
 EXPOSE 22 8001 8011 10712
@@ -42,11 +42,6 @@ RUN git clone https://github.com/ycm-core/YouCompleteMe.git /usr/src/YouComplete
 		&& cd /usr/src/YouCompleteMe \
 		&& git submodule update --init --recursive \
 		&& ./install.py  --clangd-completer --go-completer
-
-# 编码
-RUN update-locale
-RUN systemctl mask systemd-resolved.service
-RUN localectl set-locale LANG=zh_CN.UTF-8
 
 # 增加用户
 RUN groupadd -r develop
@@ -64,11 +59,13 @@ RUN git clone https://github.com/gpakosz/.tmux.git \
 		&& ln -s .tmux/.tmux.conf .tmux.conf && cp .tmux/.tmux.conf.local .tmux.conf.local
 
 # 拉取dotvim
-RUN git clone https://github.com/spriteray/dotvim.git
+RUN git clone https://github.com/spriteray/dotvim.git \
+	&& cd dotvim \
+	&& git submodule update --init --recursive
 
 # vim的部分配置
 RUN cp dotvim/_vimrc .vimrc
-RUN cp dotvim/.dircolors .dircolors
+RUN cp dotvim/dircolors-solarized/dircolors.ansi-light .dircolors
 RUN cp dotvim/_gitconfig .gitconfig
 RUN cp -r dotvim/vimfiles .vim
 RUN cp dotvim/agnoster-light.zsh-theme .oh-my-zsh/themes 
@@ -105,7 +102,7 @@ RUN vim +PlugInstall +qall
 # docker commit -m "develop workspace" 260d067248bf workspace:v1
 # docker tag ubuntu-workspace spriteray/workspace:v1
 # docker push spriteray/workspace:v1
-# docker buildx build --allow security.insecure --build-arg http_proxy="http://172.31.176.1:7890" --build-arg https_proxy="http://172.31.176.1:7890" -t workspace .
+# docker build --build-arg http_proxy="http://172.26.208.1:7890" --build-arg https_proxy="http://172.26.208.1:7890" -t workspace -f workspace/ubuntu .
 # docker run -d --name 容器名称 --cap-add=SYS_ADMIN                                           \
 #        --mount type=tmpfs,target=/run,tmpfs-mode=1777,tmpfs-size=67108864                  \
 #        --mount type=tmpfs,target=/run/lock,tmpfs-mode=1777,tmpfs-size=67108864             \
