@@ -17,7 +17,7 @@ RUN apt update
 # 安装系统环境
 RUN apt install -y net-tools sudo curl wget
 RUN apt install -y build-essential openssh-server openssh-client cmake 
-RUN apt install -y zsh git gdb tmux vim bash-completion language-pack-en
+RUN apt install -y zsh git gdb tmux vim bash-completion language-pack-en language-pack-zh-hans language-pack-zh-hant
 # 安装开发环境
 RUN apt install -y libssl-dev libpython3-dev python3-dev man
 # 安装帮助手册
@@ -25,10 +25,6 @@ RUN apt install -y manpages-de  manpages-de-dev  manpages-dev glibc-doc manpages
 
 # 映射宿主机的文件系统
 VOLUME /data
-
-# 启动sshd
-RUN service ssh start
-
 # 指定对外服务的端口号
 EXPOSE 22 8001 8011 10712
 
@@ -42,6 +38,9 @@ RUN git clone https://github.com/ycm-core/YouCompleteMe.git /usr/src/YouComplete
 		&& cd /usr/src/YouCompleteMe \
 		&& git submodule update --init --recursive \
 		&& ./install.py  --clangd-completer --go-completer
+
+# 安装locales
+RUN /usr/share/locales/install-language-pack zh_CN
 
 # 增加用户
 RUN groupadd -r develop
@@ -75,8 +74,8 @@ RUN ln -s /usr/src/YouCompleteMe .vim/bundle/YouCompleteMe
 # zsh别名设置
 # TODO: go path目录
 RUN echo "export LESSCHARSET=utf-8" >> .zshrc
-RUN echo "export LANG=zh_CN.UTF-8" >> .zshrc
-RUN echo "export LC_ALL=zh_CN.UTF-8" >> .zshrc
+RUN echo "export LANG=\"zh_CN.UTF-8\"" >> .zshrc
+RUN echo "export LC_ALL=\"zh_CN.UTF-8\"" >> .zshrc
 RUN echo "eval \"\`dircolors -b .dircolors\`\"" >> .zshrc
 RUN echo "alias ls='ls -F --color'" >> .zshrc
 RUN echo "alias ll='ls -l'" >> .zshrc
@@ -96,9 +95,11 @@ RUN sed -i 's/^#set -g status-position top/set -g status-position top/g' .tmux.c
 
 # 安装VIM插件
 RUN vim +PlugInstall +qall
+RUN ln -s /data data
+RUN sed -i 's/" colorscheme solarized/colorscheme solarized/g' .vimrc
 
 # 指令
-# docker run -itd -v workspace:/data --privileged=true -p 22:22 --name workspace workspace /sbin/init
+# docker run -itd -v workspace:/data --privileged=true -p 2222:22 --name workspace workspace /sbin/init
 # docker commit -m "develop workspace" 260d067248bf workspace:v1
 # docker tag ubuntu-workspace spriteray/workspace:v1
 # docker push spriteray/workspace:v1
