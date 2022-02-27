@@ -15,7 +15,7 @@ MAINTAINER spriteray spriteray@gmail.com
 # 更新apt
 RUN apt update
 # 安装系统环境
-RUN apt install -y net-tools sudo curl wget
+RUN apt install -y net-tools sudo curl unzip wget
 RUN apt install -y build-essential openssh-server openssh-client cmake 
 RUN apt install -y zsh git gdb tmux vim bash-completion language-pack-en language-pack-zh-hans language-pack-zh-hant
 # 安装开发环境
