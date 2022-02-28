@@ -19,7 +19,7 @@ RUN apt install -y net-tools sudo curl unzip wget
 RUN apt install -y build-essential openssh-server openssh-client cmake 
 RUN apt install -y zsh git gdb tmux vim bash-completion language-pack-en language-pack-zh-hans language-pack-zh-hant
 # 安装开发环境
-RUN apt install -y libssl-dev libpython3-dev python3-dev man
+RUN apt install -y libssl-dev libpython3-dev python3-dev man libmysqlclient-dev libcurl4-openssl-dev
 # 安装帮助手册
 RUN apt install -y manpages-de  manpages-de-dev  manpages-dev glibc-doc manpages-posix-dev manpages-posix manpages-zh
 
@@ -28,6 +28,10 @@ VOLUME /data
 RUN update-rc.d ssh defaults
 # 指定对外服务的端口号
 EXPOSE 22 8001 8011 10712
+#CMD ["/usr/sbin/sshd", "-D"]
+COPY usr_local_lib /etc/ld.so.conf.d
+RUN ldconfig -v
+# COPY FindLua.cmake /usr/share/cmake-3.16/Modules
 
 # go
 RUN wget https://golang.org/dl/go1.16.3.linux-amd64.tar.gz
@@ -49,7 +53,7 @@ RUN set -eux; \
 		tmpdir=$(mktemp -d); \
     	curl -o ${tmpdir}.zip -L https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VERSION}/protobuf-all-${PROTOBUF_VERSION}.zip; \
     	unzip -d ${tmpdir} ${tmpdir}.zip; \
-    	cd ${tmpdir}/protobuf-all-${PROTOBUF_VERSION}; \
+    	cd ${tmpdir}/protobuf-${PROTOBUF_VERSION}; \
     	./configure; \
     	make; \
     	make install;
